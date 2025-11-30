@@ -351,7 +351,7 @@ async function submitOrder(e) {
     message += `شكراً لاختياركم مطعمنا!`;
     
     // 4. فتح الواتساب وإشعار المستخدم
-    const restaurantPhoneNumber = '9647700000000'; // تأكد من تغيير هذا الرقم
+    const restaurantPhoneNumber = '9647830103053'; // تأكد من تغيير هذا الرقم
     
     const encodedMessage = encodeURIComponent(message);
     const whatsappURL = `https://wa.me/${restaurantPhoneNumber}?text=${encodedMessage}`;
@@ -367,3 +367,4 @@ async function submitOrder(e) {
         clearCart();
     }, 1000); // تأخير بسيط لضمان فتح الواتساب أولاً
 }
+
