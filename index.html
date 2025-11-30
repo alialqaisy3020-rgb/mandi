@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منيو المطعم التفاعلية</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <header class="header">
+        <img src="images/logo.png" alt="شعار المطعم" class="restaurant-logo">
+        <h1>🍽️ منيو المطعم</h1>
+    </header>
+
+    <main class="container">
+        
+        <div class="control-bar-wrapper">
+            <nav id="category-bar" class="category-bar">
+                </nav>
+
+            <div class="price-filter-container">
+                <h3>فلتر السعر: <span id="current-price-label">0</span></h3>
+                <input type="range" id="price-range-slider" step="500">
+                <div class="price-labels">
+                    <span id="min-price-label"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-wrapper">
+            <section class="menu-items-section">
+                <h2 id="current-category-title">القائمة</h2>
+                <div id="menu-container" class="menu-grid">
+                    </div>
+            </section>
+
+            <aside class="cart-section">
+                <h2>🛒 سلة المشتريات</h2>
+                <ul id="cart-list" class="cart-list">
+                    <li class="empty-message">العربة فارغة حالياً.</li>
+                </ul>
+                <div class="cart-summary">
+                    <p>الإجمالي: <span id="subtotal">0</span> د.ع</p>
+                    <p class="total">المجموع الكلي: <span id="total">0</span> د.ع</p>
+                </div>
+                
+                <div class="cart-actions">
+                    <button id="clear-cart-btn" class="secondary-btn">
+                        <i class="fas fa-trash-alt"></i> تفريغ السلة
+                    </button>
+                    <button id="final-checkout-btn" class="checkout-button">
+                        <i class="fas fa-money-check-alt"></i> إتمام الطلب
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <div id="checkout-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>تفاصيل الطلب</h2>
+            
+            <form id="order-form">
+                <div class="form-group">
+                    <label>نوع الطلب:</label>
+                    <select id="delivery-method" onchange="toggleFormFields()">
+                        <option value="pickup">استلام من المطعم</option>
+                        <option value="delivery">توصيل (Delivery)</option>
+                        <option value="table">داخل الصالة (Table)</option>
+                    </select>
+                </div>
+
+                <div id="contact-group" style="display: block;">
+                    <div class="form-group">
+                        <label>الاسم الكريم:</label>
+                        <input type="text" id="customer-name" placeholder="اكتب اسمك هنا">
+                    </div>
+                    <div class="form-group">
+                        <label>رقم الهاتف (واتساب):</label>
+                        <input type="tel" id="customer-phone" placeholder="07xxxxxxxxx">
+                    </div>
+                </div>
+
+                <div id="address-group" style="display: none;">
+                    <div class="form-group">
+                        <label>عنوان التوصيل:</label>
+                        <input type="text" id="delivery-address" placeholder="المنطقة - أقرب نقطة دالة">
+                    </div>
+                </div>
+
+                <div id="table-group" style="display: none;">
+                    <div class="form-group">
+                        <label>رقم الطاولة:</label>
+                        <input type="number" id="table-number" placeholder="رقم الطاولة">
+                    </div>
+                </div>
+
+                <button type="submit" class="checkout-button" style="margin-top: 20px;">تأكيد وإرسال</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 جميع الحقوق محفوظة</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
