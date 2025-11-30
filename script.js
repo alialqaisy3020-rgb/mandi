@@ -32,10 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         slider.value = maxPriceLimit; 
         minPriceLabel.textContent = formatCurrency(minPrice);
         
-        // تحديث أولي
         handleSliderChange(slider.value);
 
-        // عند التحريك
         slider.addEventListener('input', (e) => {
             handleSliderChange(e.target.value);
         });
@@ -54,8 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearBtn) clearBtn.addEventListener('click', clearCart);
     if (checkoutBtn) checkoutBtn.addEventListener('click', openModal);
     if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+    
+    // استدعاء دالة الإرسال المتطورة عند الضغط على زر الإرسال
     if (orderForm) orderForm.addEventListener('submit', submitOrder);
 
+    // إغلاق النافذة عند الضغط خارجها
     window.onclick = function(event) {
         const modal = document.getElementById('checkout-modal');
         if (event.target == modal) closeModal();
@@ -75,11 +76,8 @@ function handleSliderChange(value) {
     
     if (label) label.textContent = formatCurrency(currentMaxPrice);
     
-    // معادلة التلوين للسلايدر العربي (من اليمين لليسار)
-    // التدرج اللوني "to left" يعني أن اللون الأول يبدأ من اليمين
+    // تلوين السلايدر
     const percentage = ((currentMaxPrice - minPrice) / (maxPriceLimit - minPrice)) * 100;
-    
-    // الأزرق يبدأ من اليمين (0%) ويمتد حتى النسبة الحالية
     slider.style.background = `linear-gradient(to left, var(--slider-fill-color) ${percentage}%, var(--slider-track-color) ${percentage}%)`;
 
     renderMenu();
@@ -173,7 +171,6 @@ function clearCart() {
 function updateCartUI() {
     const list = document.getElementById('cart-list');
     const subSpan = document.getElementById('subtotal');
-    // const taxSpan = document.getElementById('tax'); // تم حذف الضريبة
     const totalSpan = document.getElementById('total');
     
     list.innerHTML = '';
@@ -205,15 +202,12 @@ function updateCartUI() {
         list.appendChild(li);
     });
 
-    // لا توجد ضريبة
     const total = subtotal;
-
     subSpan.textContent = formatCurrency(subtotal);
-    // taxSpan.textContent = formatCurrency(tax);
     totalSpan.textContent = formatCurrency(total);
 }
 
-// --- دوال النافذة (Modal) والنموذج ---
+// --- دوال النافذة (Modal) وإدارة الحقول ---
 
 function openModal() {
     if (cart.length === 0) {
@@ -228,69 +222,64 @@ function closeModal() {
     document.getElementById('checkout-modal').style.display = 'none';
 }
 
+// دالة عالمية للتبديل بين الحقول بناء على نوع الطلب
 window.toggleFormFields = function() {
     const method = document.getElementById('delivery-method').value;
     const contactGroup = document.getElementById('contact-group');
     const addressGroup = document.getElementById('address-group');
     const tableGroup = document.getElementById('table-group');
 
-    // الافتراضي (الاسم والهاتف ظاهران)
-    contactGroup.style.display = 'block';
+    // إظهار/إخفاء الحقول حسب الاختيار
+    contactGroup.style.display = 'block'; // الاسم والهاتف مطلوبان في معظم الحالات
     addressGroup.style.display = 'none';
     tableGroup.style.display = 'none';
 
     if (method === 'delivery') {
         addressGroup.style.display = 'block'; 
     } else if (method === 'table') {
-        contactGroup.style.display = 'none'; 
+        contactGroup.style.display = 'none'; // في الطاولة قد لا نحتاج الاسم، لكن يمكن تركه
         tableGroup.style.display = 'block'; 
-    } else if (method === 'pickup') {
-        // يبقى الاسم والهاتف ظاهرين فقط
     }
 }
 
 // **********************************************
-// دالة مساعدة جديدة: للحصول على الموقع الجغرافي
+// دالة تحديد الموقع الجغرافي (Geolocation)
 // **********************************************
 function getGeolocation() {
     return new Promise((resolve, reject) => {
-        // التحقق مما إذا كان المتصفح يدعم خاصية الموقع الجغرافي
         if (!navigator.geolocation) {
-            // حل مؤقت إذا لم يتم الدعم أو إذا كان المستخدم لا يريد مشاركة الموقع
-            resolve("الموقع غير متوفر / تم رفض المشاركة");
+            resolve("الموقع غير متوفر / المتصفح لا يدعم");
             return;
         }
 
-        // طلب الموقع من المتصفح (المستخدم سيرى نافذة تطلب الإذن)
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                // إرجاع رابط مباشر للموقع
-                resolve(`الموقع: https://www.google.com/maps?q=${lat},${lon}`);
+                // رابط خرائط جوجل الدقيق
+                resolve(`https://www.google.com/maps?q=${lat},${lon}`);
             },
             (error) => {
-                // التعامل مع الأخطاء (مثل رفض المستخدم)
-                console.error("Geolocation Error:", error.code, error.message);
-                resolve("الموقع: تم رفض مشاركة الموقع من قبل المستخدم.");
+                console.error("Geolocation Error:", error);
+                resolve("تعذر تحديد الموقع تلقائياً (تم الرفض أو خطأ)");
             },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     });
 }
 
 
 // **********************************************
-// دالة submitOrder المعدلة لاستقبال الموقع
+// دالة إرسال الطلب (Submit Order) مع الواتساب
 // **********************************************
 async function submitOrder(e) {
     e.preventDefault();
     const method = document.getElementById('delivery-method').value;
     
+    // 1. التحقق من صحة البيانات (Validation)
     let isValid = true;
     let errorMsg = "";
 
-    // 1. منطق التحقق من صحة الحقول (Validation Logic) - (يبقى كما هو)
     if (method === 'pickup' || method === 'delivery') {
         const name = document.getElementById('customer-name').value.trim();
         const phone = document.getElementById('customer-phone').value.trim();
@@ -304,7 +293,7 @@ async function submitOrder(e) {
         const addr = document.getElementById('delivery-address').value.trim();
         if (!addr) {
             isValid = false;
-            errorMsg = "يرجى كتابة عنوان التوصيل.";
+            errorMsg = "يرجى كتابة عنوان التوصيل (اسم المنطقة).";
         }
     }
     
@@ -321,57 +310,60 @@ async function submitOrder(e) {
         return; 
     }
     
-    // ** 2. الخطوة الجديدة والحاسمة: الحصول على الموقع الجغرافي **
-    
-    // إظهار تنبيه للمستخدم بأنه سيطلب الإذن
-    alert("لإتمام طلب التوصيل، سيطلب المتصفح إذن مشاركة الموقع الجغرافي. يرجى الموافقة.");
-    
-    // الانتظار حتى يتم الحصول على الموقع أو رفضه
-    const geolocationResult = await getGeolocation();
+    // 2. الحصول على الموقع الجغرافي (فقط في حالة الدليفري)
+    let locationLink = "";
+    if (method === 'delivery') {
+        const confirmLocation = confirm("هل تسمح لنا بتحديد موقعك الحالي لتسهيل التوصيل؟\n(اضغط موافق وسيطلب المتصفح الإذن)");
+        if (confirmLocation) {
+            locationLink = await getGeolocation();
+        } else {
+            locationLink = "الزبون فضل عدم مشاركة الموقع تلقائياً";
+        }
+    }
 
-
-    // 3. بناء رسالة الواتساب
-    
+    // 3. تجهيز رسالة الواتساب
     const total = document.getElementById('total').textContent;
     const name = document.getElementById('customer-name').value.trim();
     const phone = document.getElementById('customer-phone').value.trim();
 
-    let message = `*طلب جديد من منيو المطعم* 🍽️\n`;
+    let message = `*طلب جديد من الموقع* 🍽️\n`;
     message += `-------------------------\n`;
-    message += `*نوع الطلب:* ${method === 'delivery' ? 'توصيل' : method === 'table' ? 'صالة' : 'استلام'}\n`;
-    message += `*الاسم:* ${name || 'N/A'}\n`;
-    message += `*الهاتف:* ${phone || 'N/A'}\n`;
+    message += `*نوع الطلب:* ${method === 'delivery' ? '🛵 توصيل (Delivery)' : method === 'table' ? '🍽️ داخل الصالة' : '🛍️ استلام (سفري)'}\n`;
+    
+    if (method !== 'table') {
+        message += `*الاسم:* ${name}\n`;
+        message += `*الهاتف:* ${phone}\n`;
+    }
     
     if (method === 'delivery') {
         const address = document.getElementById('delivery-address').value.trim();
-        message += `*العنوان الكتابي:* ${address}\n`;
-        // إضافة الموقع الذي تم الحصول عليه هنا
-        message += `*${geolocationResult}*\n`;
+        message += `*العنوان:* ${address}\n`;
+        message += `*رابط الموقع:* ${locationLink}\n`;
     } else if (method === 'table') {
         const table = document.getElementById('table-number').value.trim();
         message += `*رقم الطاولة:* ${table}\n`;
     }
     
     message += `-------------------------\n`;
-    message += `*تفاصيل الوجبات:*\n`;
+    message += `*الطلبات:*\n`;
     
     cart.forEach((item, index) => {
         message += `${index + 1}. ${item.name} (x${item.quantity}) - ${formatCurrency(item.price * item.quantity)}\n`;
     });
     
     message += `-------------------------\n`;
-    message += `*المجموع الكلي المطلوب: ${total}*\n`;
-    message += `شكراً لاختياركم مطعمنا!`;
-
-    // 4. تشفير الرسالة وإنشاء الرابط وفتح الواتساب
+    message += `*المجموع الكلي: ${total}*\n`;
+    
+    // 4. فتح الواتساب
+    // !!!!!!!!!!! هام جداً: غير الرقم أدناه لرقم هاتفك !!!!!!!!!!!
+    const restaurantPhoneNumber = '9647830103053'; // اكتب رقمك هنا
     
     const encodedMessage = encodeURIComponent(message);
-    const restaurantPhoneNumber = '9647xxxxxxxxx'; // !!! استبدل هذا الرقم !!!
     const whatsappURL = `https://wa.me/${restaurantPhoneNumber}?text=${encodedMessage}`;
     
     window.open(whatsappURL, '_blank');
-    alert("تم تجهيز الطلب. سيتم فتح نافذة الواتساب، يرجى إرسال الرسالة لإكمال الطلب.");
-
+    
+    // تنظيف السلة وإغلاق النافذة
     closeModal();
     clearCart();
 }
