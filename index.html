@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مطعم مندي ابو ديما وام ديما </title>
+    <title>منيو المطعم التفاعلية</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -11,7 +11,7 @@
 
     <header class="header">
         <img src="images/logo.png" alt="شعار المطعم" class="restaurant-logo">
-        <h1>🍽️ مطعم مندي ام ديما </h1>
+        <h1>🍽️ منيو المطعم</h1>
     </header>
 
     <main class="container">
@@ -67,7 +67,7 @@
                 <div class="form-group">
                     <label>نوع الطلب:</label>
                     <select id="delivery-method" onchange="toggleFormFields()">
-                        <option value="pickup">استلام من المطعم</option>
+                        <option value="pickup">استلام من المطعم (سفري)</option>
                         <option value="delivery">توصيل (Delivery)</option>
                         <option value="table">داخل الصالة (Table)</option>
                     </select>
@@ -86,8 +86,11 @@
 
                 <div id="address-group" style="display: none;">
                     <div class="form-group">
-                        <label>عنوان التوصيل:</label>
-                        <input type="text" id="delivery-address" placeholder="المنطقة - أقرب نقطة دالة">
+                        <label>عنوان التوصيل (المنطقة):</label>
+                        <input type="text" id="delivery-address" placeholder="مثال: المنصور - شارع 14 رمضان">
+                        <small style="color: #ffd700; display: block; margin-top: 5px;">
+                            📍 ملاحظة: سيتم تحديد موقعك الجغرافي الدقيق وإرساله تلقائياً عند الضغط على زر الإرسال.
+                        </small>
                     </div>
                 </div>
 
@@ -98,7 +101,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="checkout-button" style="margin-top: 20px;">تأكيد وإرسال</button>
+                <button type="submit" class="checkout-button" style="margin-top: 20px;">
+                    <i class="fab fa-whatsapp"></i> تأكيد وإرسال عبر واتساب
+                </button>
             </form>
         </div>
     </div>
@@ -109,6 +114,4 @@
 
     <script src="script.js"></script>
 </body>
-
 </html>
-
