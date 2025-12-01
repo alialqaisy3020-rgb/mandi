@@ -230,14 +230,14 @@ window.toggleFormFields = function() {
     const tableGroup = document.getElementById('table-group');
 
     // إظهار/إخفاء الحقول حسب الاختيار
-    contactGroup.style.display = 'block'; // الاسم والهاتف مطلوبان في معظم الحالات
+    contactGroup.style.display = 'block'; 
     addressGroup.style.display = 'none';
     tableGroup.style.display = 'none';
 
     if (method === 'delivery') {
         addressGroup.style.display = 'block'; 
     } else if (method === 'table') {
-        contactGroup.style.display = 'none'; // في الطاولة قد لا نحتاج الاسم، لكن يمكن تركه
+        contactGroup.style.display = 'none'; 
         tableGroup.style.display = 'block'; 
     }
 }
@@ -252,10 +252,9 @@ function getGeolocation() {
             return;
         }
 
-        // تحديد إعدادات الطلب (لجعلها دقيقة وسريعة)
         const options = {
             enableHighAccuracy: true,
-            timeout: 15000, // مهلة 15 ثانية
+            timeout: 10000, 
             maximumAge: 0
         };
 
@@ -263,14 +262,14 @@ function getGeolocation() {
             (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                // رابط خرائط جوجل الدقيق (تعديل بسيط لضمان الفتح)
-                const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-                resolve(`رابط الموقع الجغرافي: ${mapLink}`);
+                // رابط خرائط جوجل الصحيح
+                const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+                resolve(mapLink);
             },
             (error) => {
                 console.error("Geolocation Error:", error.code, error.message);
-                // إرجاع رسالة خطأ واضحة بدلاً من رفض الـ Promise
-                resolve(`تعذر تحديد الموقع تلقائياً (رمز الخطأ: ${error.code}). يرجى التأكد من تشغيل GPS والسماح للمتصفح بالوصول للموقع.`);
+                // رسالة في حالة الرفض أو الخطأ
+                resolve("لم يتم تحديد الموقع (تم رفض الإذن أو الجي بي اس مغلق)");
             },
             options
         );
@@ -310,11 +309,10 @@ async function submitOrder(e) {
         return; 
     }
     
-    // 2. الحصول على الموقع الجغرافي (فقط في حالة الدليفري)
+    // 2. الحصول على الموقع الجغرافي مباشرة (للتوصيل فقط)
     let locationResult = "";
     if (method === 'delivery') {
-        // إشعار المستخدم قبل طلب الإذن
-        alert("انتباه: سيطلب المتصفح إذن تحديد موقعك الآن. يرجى الموافقة لإرسال الموقع الدقيق للتوصيل.");
+        // تم إزالة الـ alert اليدوي ليتم الطلب مباشرة
         locationResult = await getGeolocation();
     }
     
@@ -333,7 +331,12 @@ async function submitOrder(e) {
     if (method === 'delivery') {
         const address = document.getElementById('delivery-address').value.trim();
         message += `*العنوان الكتابي:* ${address}\n`;
-        message += `*الموقع الجغرافي:* ${locationResult}\n`; // إضافة النتيجة هنا
+        // سيتم وضع الرابط فقط إذا تم جلبه بنجاح
+        if (locationResult && locationResult.includes('http')) {
+             message += `*رابط الموقع:* ${locationResult}\n`;
+        } else {
+             message += `*حالة الموقع:* ${locationResult}\n`;
+        }
     } else if (method === 'table') {
         const table = document.getElementById('table-number').value.trim();
         message += `*رقم الطاولة:* ${table}\n`;
@@ -348,23 +351,19 @@ async function submitOrder(e) {
     
     message += `-------------------------\n`;
     message += `*المجموع الكلي المطلوب: ${total}*\n`;
-    message += `شكراً لاختياركم مطعمنا!`;
     
-    // 4. فتح الواتساب وإشعار المستخدم
-    const restaurantPhoneNumber = '9647830103053'; // تأكد من تغيير هذا الرقم
+    // 4. فتح الواتساب (طريقة متوافقة مع الموبايل)
+    const restaurantPhoneNumber = '9647830103053'; // ضع رقم المطعم هنا
     
     const encodedMessage = encodeURIComponent(message);
     const whatsappURL = `https://wa.me/${restaurantPhoneNumber}?text=${encodedMessage}`;
     
-    // رسالة تأكيد قبل الفتح
-    alert("✅ اكتمل تجهيز الطلب. سيتم الآن فتح تطبيق الواتساب لإرسال رسالة إلى المطعم. يرجى الضغط على زر الإرسال في الواتساب.");
+    // استخدام location.href أفضل للموبايل من window.open لتفادي الحظر
+    window.location.href = whatsappURL;
     
-    window.open(whatsappURL, '_blank');
-    
-    // تنظيف السلة وإغلاق النافذة
+    // تنظيف السلة (اختياري، تم تأخيره قليلاً لضمان التحويل)
     setTimeout(() => {
         closeModal();
         clearCart();
-    }, 1000); // تأخير بسيط لضمان فتح الواتساب أولاً
+    }, 2000); 
 }
-
