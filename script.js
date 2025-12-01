@@ -247,8 +247,9 @@ window.toggleFormFields = function() {
 // **********************************************
 function getGeolocation() {
     return new Promise((resolve, reject) => {
+        // التحقق من دعم المتصفح
         if (!navigator.geolocation) {
-            resolve("الموقع غير متوفر / المتصفح لا يدعم");
+            reject("المتصفح لا يدعم تحديد الموقع.");
             return;
         }
 
@@ -267,9 +268,8 @@ function getGeolocation() {
                 resolve(mapLink);
             },
             (error) => {
-                console.error("Geolocation Error:", error.code, error.message);
-                // رسالة في حالة الرفض أو الخطأ
-                resolve("لم يتم تحديد الموقع (تم رفض الإذن أو الجي بي اس مغلق)");
+                // في حالة الخطأ، نرجع رفض (Reject) ليتم التقاطه في دالة الإرسال
+                reject(error);
             },
             options
         );
@@ -309,17 +309,39 @@ async function submitOrder(e) {
         return; 
     }
     
-    // 2. الحصول على الموقع الجغرافي مباشرة (للتوصيل فقط)
+    // 2. معالجة الموقع الجغرافي (شرط صارم للدليفري)
     let locationResult = "";
+    
     if (method === 'delivery') {
-        // تم إزالة الـ alert اليدوي ليتم الطلب مباشرة
-        locationResult = await getGeolocation();
+        // تنبيه المستخدم قبل محاولة جلب الموقع (لضمان الفهم)
+        alert("تنبيه: سيتم الآن طلب تحديد موقعك الحالي لإرفاقه بالطلب. يرجى الضغط على 'سماح' (Allow) عند ظهور النافذة.");
+        
+        try {
+            // محاولة جلب الموقع
+            locationResult = await getGeolocation();
+        } catch (error) {
+            // إذا فشل (رفض المستخدم أو الـ GPS مغلق)
+            console.error("Geolocation Error:", error);
+            alert("⚠️ عذراً، لا يمكن إرسال طلب التوصيل بدون موقع جغرافي.\n\nيرجى تفعيل الـ GPS في هاتفك والموافقة على صلاحية الموقع، ثم حاول الإرسال مرة أخرى.");
+            return; // إيقاف الدالة فوراً وعدم فتح الواتساب
+        }
     }
     
-    // 3. تجهيز رسالة الواتساب
+    // 3. توليد رقم طلب فريد (أرقام فقط ومتسلسل زمنياً)
+    // الصيغة: السنة الشهر اليوم الساعة الدقيقة الثانية (مثال: 20231025143005)
+    const date = new Date();
+    const orderID = date.getFullYear().toString() +
+                    (date.getMonth() + 1).toString().padStart(2, '0') +
+                    date.getDate().toString().padStart(2, '0') +
+                    date.getHours().toString().padStart(2, '0') +
+                    date.getMinutes().toString().padStart(2, '0') +
+                    date.getSeconds().toString().padStart(2, '0');
+
+    // 4. تجهيز رسالة الواتساب
     const total = document.getElementById('total').textContent;
 
     let message = `*طلب جديد من الموقع* 🍽️\n`;
+    message += `*رقم الطلب:* ${orderID}\n`; // الرقم التسلسلي (أرقام فقط)
     message += `-------------------------\n`;
     message += `*نوع الطلب:* ${method === 'delivery' ? '🛵 توصيل (Delivery)' : method === 'table' ? '🍽️ داخل الصالة' : '🛍️ استلام (سفري)'}\n`;
     
@@ -331,12 +353,8 @@ async function submitOrder(e) {
     if (method === 'delivery') {
         const address = document.getElementById('delivery-address').value.trim();
         message += `*العنوان الكتابي:* ${address}\n`;
-        // سيتم وضع الرابط فقط إذا تم جلبه بنجاح
-        if (locationResult && locationResult.includes('http')) {
-             message += `*رابط الموقع:* ${locationResult}\n`;
-        } else {
-             message += `*حالة الموقع:* ${locationResult}\n`;
-        }
+        // هنا نضمن أن الرابط موجود لأننا أوقفنا الدالة في حالة الخطأ
+        message += `*رابط الموقع:* ${locationResult}\n`;
     } else if (method === 'table') {
         const table = document.getElementById('table-number').value.trim();
         message += `*رقم الطاولة:* ${table}\n`;
@@ -352,16 +370,16 @@ async function submitOrder(e) {
     message += `-------------------------\n`;
     message += `*المجموع الكلي المطلوب: ${total}*\n`;
     
-    // 4. فتح الواتساب (طريقة متوافقة مع الموبايل)
+    // 5. فتح الواتساب (طريقة متوافقة مع الموبايل)
     const restaurantPhoneNumber = '9647830103053'; // ضع رقم المطعم هنا
     
     const encodedMessage = encodeURIComponent(message);
     const whatsappURL = `https://wa.me/${restaurantPhoneNumber}?text=${encodedMessage}`;
     
-    // استخدام location.href أفضل للموبايل من window.open لتفادي الحظر
+    // استخدام location.href
     window.location.href = whatsappURL;
     
-    // تنظيف السلة (اختياري، تم تأخيره قليلاً لضمان التحويل)
+    // تنظيف السلة 
     setTimeout(() => {
         closeModal();
         clearCart();
